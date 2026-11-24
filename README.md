@@ -4,7 +4,9 @@
 
 # The One-Line Laugh
 
-One funny line of at most 200 characters on any subject — the house judge keeps the bigger laugh. Run the builder:
+One funny line of at most 200 characters on any subject — the house judge keeps
+the bigger laugh, weighing a real surprise at the end, an everyday truth, and
+economy of words. Run the builder:
 
 ```sh
 python main.py
