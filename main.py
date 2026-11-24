@@ -1,49 +1,49 @@
 #!/usr/bin/env python3
-"""Entry builder for make.fun's The One-Line Laugh bounty.
+"""Publish this repo's line for the One-Line Laugh bounty.
 
-Reads entry.txt, normalizes to one line, validates the gate rules
-(1..200 chars, not blank) and copies to $MAKEFUN_OUTPUT_DIR/entry.txt.
+Loads entry.txt, flattens it to the single sentence the judge reads,
+checks the 1..200-character gate, and drops it into
+$MAKEFUN_OUTPUT_DIR/entry.txt for the grader.
 """
 import json
 import os
-import shutil
+import pathlib
+import sys
 
-MAX_CHARS = int(os.environ.get("ENTRY_MAX_CHARS", "200"))  # this bounty's gate
-
-
-def normalize(source_text):
-    """One line only: strip trailing newlines and stray CR, keep first non-blank."""
-    text = source_text.replace("\r", "").rstrip("\n")
-    if "\n" in text:
-        text = next(ln for ln in text.split("\n") if ln.strip())
-    return text
+GATE_MAX = 200
+BOUNTY = "u-ronigrv-the-one-line-laugh-7ccca46f"
 
 
-def run():
-    here = os.path.dirname(os.path.abspath(__file__))
-    src = os.path.join(here, "entry.txt")
-    try:
-        with open(src, "rb") as fh:
-            blob = fh.read()
-    except FileNotFoundError:
-        print(json.dumps({"ok": False, "error": "missing entry.txt"}))
-        return 1
-    text = normalize(blob.decode("utf-8"))
-    if not (1 <= len(text) <= MAX_CHARS):
-        print(json.dumps({"ok": False, "error": f"entry must be 1-{MAX_CHARS} chars",
-                          "got": len(text), "bounty": "u-ronigrv-the-one-line-laugh-7ccca46f"}))
-        return 1
-    if not text.strip():
-        print(json.dumps({"ok": False, "error": "entry must not be blank"}))
-        return 1
-    out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
-    os.makedirs(out_dir, exist_ok=True)
-    with open(os.path.join(out_dir, "entry.txt"), "w", encoding="utf-8",
-              newline="\n") as fh:
-        fh.write(text)
-    print(json.dumps({"ok": True, "chars": len(text), "max": MAX_CHARS}))
+def flatten(raw):
+    """Return the first non-blank line, without CR or edge whitespace."""
+    for candidate in raw.replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+        stripped = candidate.strip()
+        if stripped:
+            return stripped
+    return ""
+
+
+def main():
+    here = pathlib.Path(__file__).resolve().parent
+    source = here / "entry.txt"
+    if not source.is_file():
+        print(json.dumps({"verdict": "reject", "bounty": BOUNTY,
+                          "why": "no entry.txt beside main.py"}))
+        return 2
+    line = flatten(source.read_text(encoding="utf-8"))
+    size = len(line)
+    if not 1 <= size <= GATE_MAX:
+        print(json.dumps({"verdict": "reject", "bounty": BOUNTY,
+                          "why": f"sentence is {size} chars, gate allows 1..{GATE_MAX}"}))
+        return 2
+    out_root = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
+    out = pathlib.Path(out_root)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "entry.txt").write_text(line + "\n", encoding="utf-8", newline="\n")
+    print(json.dumps({"verdict": "accept", "bounty": BOUNTY,
+                      "chars": size, "cap": GATE_MAX}))
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(run())
+    sys.exit(main())
