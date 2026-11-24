@@ -3,7 +3,7 @@
 
 Loads entry.txt, flattens it to the single sentence the judge reads,
 checks the 1..200-character gate, and drops it into
-$MAKEFUN_OUTPUT_DIR/entry.txt for the grader.
+$MAKEFUN_OUTPUT_DIR/entry.txt for the grader to score.
 """
 import json
 import os
